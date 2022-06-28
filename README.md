@@ -32,4 +32,26 @@ select成功时返回就绪(可读，可写和异常)文件描述符的总数，
     short revents; //实际发生的事件，由内核填充
  }
  ```
- 其中，fd成员指定文件描述符；events成员告诉poll监听fd上的哪些事件，它是一系列事件的按位或；revent成员则由内核修改，以通知应用程序fd上实际发生了哪些事情。 nfds与timeout的定义同上。
+ 其中，fd成员指定文件描述符；events成员告诉poll监听fd上的哪些事件，它是一系列事件的按位或；revent成员则由内核修改，以通知应用程序fd上实际发生了哪些事情。 
+ nfds与timeout的定义同上。
+
+ epoll是Linux特有的I/O复用函数。它在实现上与select，poll有很大差异。首先，epoll使用一组函数来完成任务，而不是单个函数。其次，epoll把用户关心的文件描述符上的事件放在内核里的一个事件表里，从而无须像select和poll那样每次调用都要重复传入文件描述符集和事件集。但是epoll需要一个额外的文件描述符，来唯一标识内核中的这个事件表。这个文件描述符使用epoll_create函数来创建:
+ ```cpp
+ #include <sys/epoll.h>
+ int epoll_create( int size )
+ ```
+ 该函数返回的文件描述符将用作其他所有epoll系统调用的第一个参数，以指定要访问的内核事件表。
+ ```cpp
+ #include <sys/epoll.h>
+ int epoll_ctl( int epfd, int op, int fd, struct epoll_event *event )
+ ```
+ fd参数是要操作的文件描述符，op参数则指定操作类型。操作类型有:
+ EPOLL_CTL_ADD 往事件表中注册fd上的事件
+ EPOLL_CTL_MOD 修改fd上的注册事件
+ EPOLL_CTL_DEl 删除fd上的注册事件
+ epoll系列系统调用的主要接口是epoll_wait函数，它在一段超时事件内等待一组文件描述符上的事件。
+ ```cpp
+ #incldue <sys/epoll.h>
+ int epoll_wait( int epfd, struct epoll_event* events, int maxevents, int timeout );
+ ```
+ epoll_wait函数如果检测到事件，就将所有就绪的事件从内核事件表中复制到它的第二个参数events指向的数组中。这个数组只用于输出epoll_wait检测到的就绪事件，而不像select和poll的数组参数那样既用于传入用户注册的事件，又用于输出内核检测到的就绪事件，这就极高地提高了应用程序索引就绪文件描述符的效率。
