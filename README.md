@@ -15,6 +15,21 @@ int select(int nfds, fd_set* readfds, fd_set* writefds,
     fd_set* exceptfds, struct timeval* timeout);
 ```
 1) nfds参数指定被监听的文件描述符的总数。它通常被设置为select监听的所有文件描述符中的最大值加1，因为文件描述符是从0开始计数的。
-2）readfds, writefds和exceptfds参数分别指向可读，可写和异常等事件对应的文件描述符集合。应用程序调用select函数时，通过这三个参数传入自己感兴趣的文件描述符select调用返回时，内核将修改它们来通知应用程序哪些文件描述符已经就绪。
+2) readfds, writefds和exceptfds参数分别指向可读，可写和异常等事件对应的文件描述符集合。应用程序调用select函数时，通过这三个参数传入自己感兴趣的文件描述符select调用返回时，内核将修改它们来通知应用程序哪些文件描述符已经就绪。
 3) timeout参数用来设置select函数的超时时间，它是一个timeval结构类型的指针，采用指针参数是因为内核将修改它以告诉应用程序select等待了多久。
 select成功时返回就绪(可读，可写和异常)文件描述符的总数，如果在超时时间内没有任何文件描述符就绪，select将返回0。select失败时返回-1并设置errno。如果在select等待期间，程序接收到信号，则select立刻返回-1，并设置errno为EINTR。
+
+ ```cpp
+ #include <poll.h>
+ int poll(struct pollfd* fds, nfds_t nfds, int timeout);
+ ```
+ 1) fds参数是一个pollfd结构类型的数组，它指定所有我们感兴趣的文件描述符上发生的可读，可写和异常等事件。
+ ```cpp
+ sruct pollfd
+ {
+    int fd; //文件描述符
+    short events; //注册的事件
+    short revents; //实际发生的事件，由内核填充
+ }
+ ```
+ 其中，fd成员指定文件描述符；events成员告诉poll监听fd上的哪些事件，它是一系列事件的按位或；revent成员则由内核修改，以通知应用程序fd上实际发生了哪些事情。 nfds与timeout的定义同上。
